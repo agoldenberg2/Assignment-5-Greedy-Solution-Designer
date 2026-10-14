@@ -37,8 +37,16 @@ def maximize_deliveries(time_windows):
     # Hint: What greedy choice gives you the most room for future deliveries?
     # Hint: Think about sorting by a specific attribute
     
-    pass  # Delete this and write your code
+    sorted_windows = sorted(time_windows, key=lambda x: x['end'])
+    selected = []
+    last_end = float('-inf')
 
+    for delivery in sorted_windows:
+        if delivery['start'] >= last_end:
+            selected.append(delivery['delivery_id'])
+            last_end = delivery['end']
+
+    return selected 
 
 # ============================================================================
 # PART 2: TRUCK LOADING (Fractional Knapsack)
@@ -76,8 +84,34 @@ def optimize_truck_load(packages, weight_limit):
     # Hint: What ratio determines which packages are most valuable per pound?
     # Hint: You can take fractions - if you have 5 lbs capacity left and a 10 lb package, take 0.5 of it
     
-    pass  # Delete this and write your code
+    sorted_packages = sorted(
+        packages,
+        key=lambda x: x['priority'] / x['weight'],
+        reverse=True
+    )
+    total_priority = 0
+    total_weight = 0
+    selected = []
+    for package in sorted_packages:
+        remaining = weight_limit - total_weight
 
+        if remaining <= 0:
+            break
+        if package['weight'] <= remaining:
+            fraction = 1.0
+        else:
+            fraction = remaining / package['weight']
+        selected.append({
+            'package_id': package['package_id'],
+            'fraction': fraction
+        })
+        total_priority += package['priority'] * fraction
+        total_weight += package['weight'] * fraction
+    return {
+        'total_priority': total_priority,
+        'total_weight': total_weight,
+        'packages': selected
+    }
 
 # ============================================================================
 # PART 3: DRIVER ASSIGNMENT (Interval Scheduling)
@@ -112,8 +146,26 @@ def minimize_drivers(deliveries):
     # Hint: How do you know if a delivery overlaps with another?
     # Hint: Can you assign a delivery to an existing driver, or do you need a new one?
     
-    pass  # Delete this and write your code
+    sorted_deliveries = sorted(deliveries, key=lambda x: x['start'])
 
+    driver_end_times = []
+    assignments = []
+
+    for delivery in sorted_deliveries:
+        assigned = False
+        for i in range(len(driver_end_times)):
+            if delivery['start'] >= driver_end_times[i]:
+                assignments[i].append(delivery['delivery_id'])
+                driver_end_times[i] = delivery['end']
+                assigned = True
+                break
+        if not assigned:
+            driver_end_times.append(delivery['end'])
+            assignments.append([delivery['delivery_id']])
+    return {
+        'num_drivers': len(driver_end_times),
+        'assignments': assignments
+    }
 
 # ============================================================================
 # TESTING & BENCHMARKING
@@ -297,9 +349,9 @@ if __name__ == "__main__":
     
     # Uncomment these as you complete each part:
     
-    # test_package_prioritization()
-    # test_truck_loading()
-    # test_driver_assignment()
-    # benchmark_scenarios()
+    test_package_prioritization()
+    test_truck_loading()
+    test_driver_assignment()
+    benchmark_scenarios()
     
     print("\n⚠ Uncomment the test functions in the main block to run tests!")
